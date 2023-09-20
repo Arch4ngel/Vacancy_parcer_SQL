@@ -27,41 +27,33 @@ class HeadHunterAPI(API):
 
     def get_employer(self, employer_id):
         """Получение описаний работодателей через API по идентификатору"""
-        resp = json.loads(requests.get('https://api.hh.ru/employers',
-                                       params={'page': 0, 'per_page': 100,
-                                               'employer_id': str(employer_id)}).content.decode())['items']
-        result = []
-        for item in resp:
-            result.append({'name': item['name'], 'open_vacancies': ,
-                           'url': item['alternate_url']})
+        resp = json.loads(requests.get(f'https://api.hh.ru/employers/{str(employer_id)}').content.decode())
+        result = {'employer_id': employer_id, 'name': resp['name'], 'open_vacancies': resp['open_vacancies'],
+                  'url': resp['alternate_url']}
         return result
 
     def get_vacancies(self, employer_id):
         """Получение вакансий через API по идентификатору работодателя"""
         resp = json.loads(requests.get('https://api.hh.ru/vacancies',
-                                       params={'page': 0, 'per_page': 100,
+                                       params={'page': 0, 'per_page': 10,
                                                'employer_id': str(employer_id)}).content.decode())['items']
         result = []
         for item in resp:
             if not item['salary']:
-                salary_from = None
-                salary_to = None
-                salary_currency = None
+                salary = 0
+                salary_currency = ''
             else:
                 if not item['salary']['from']:
-                    salary_from = None
-                    salary_to = int(item['salary']['to'])
+                    salary = int(item['salary']['to'])
                 elif not item['salary']['to']:
-                    salary_from = int(item["salary"]["from"])
-                    salary_to = None
+                    salary = int(item["salary"]["from"])
                 else:
-                    salary_from = int(item["salary"]["from"])
-                    salary_to = int(item['salary']['to'])
+                    salary = int(item['salary']['to'])
                 if not item['salary']['currency']:
-                    salary_currency = None
+                    salary_currency = ''
                 else:
                     salary_currency = item['salary']['currency']
-            result.append({'name': item['name'], 'salary_from': salary_from, 'salary_to': salary_to,
+            result.append({'vacancy_id': int(item['id']), 'name': item['name'], 'salary': salary,
                            'salary_currency': salary_currency, 'url': item['alternate_url'],
                            'employer_id': int(item['employer']['id'])})
         return result
